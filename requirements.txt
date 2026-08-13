@@ -1,0 +1,7 @@
+streamlit
+pandas
+sqlalchemy
+pymysql
+plotly
+folium
+streamlit-folium
