@@ -57,20 +57,17 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# --- HERO BANNER COM LOGO DO MERCADO LIVRE ---
+# --- HERO BANNER  ---
 st.markdown(
     """
     <div class="hero-container">
-        <div style="display: flex; align-items: center; gap: 18px; margin-bottom: 10px;">
-            <img src="https://http2.mlstatic.com/frontend-assets/ui-navigation/5.21.22/mercadolibre/logo__small.png" width="60" style="background: #FFE600; padding: 6px; border-radius: 10px;">
-            <div>
-                <div class="hero-title">🏕️ Panorama de Inteligência: Mercado Outdoor & Campismo</div>
-                <div class="hero-subtitle">
-                    Plataforma analítica integrada para monitoramento da oferta de acampamentos e demanda de e-commerce outdoor no Brasil.
-                </div>
+        <div style="margin-bottom: 10px;">
+            <div class="hero-title">🏕️ Panorama de Inteligência: Mercado Outdoor & Campismo</div>
+            <div class="hero-subtitle">
+                Plataforma analítica integrada para monitoramento da oferta de acampamentos e demanda de e-commerce outdoor no Brasil.
             </div>
         </div>
-        <div>
+    <div>
             <span class="badge-tag">🏛️ <b>MinTur:</b> Série Histórica de 24 Meses</span>
             <span class="badge-tag">🛍️ <b>Mercado Livre:</b> Destaques da Categoria Camping</span>
             <span class="badge-tag">⚡ Data Integration via REST API</span>
