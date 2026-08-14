@@ -16,6 +16,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+# Estilização CSS Personalizada (Hero Banner, Timeline & Badges)
 st.markdown(
     """
     <style>
@@ -38,6 +39,44 @@ st.markdown(
         display: inline-block;
         border: 1px solid rgba(255, 255, 255, 0.2);
     }
+    
+    /* CSS DA TIMELINE DE ENGENHARIA DO PROJETO */
+    .timeline-item {
+        border-left: 4px solid #2563EB;
+        padding-left: 20px;
+        margin-left: 10px;
+        margin-bottom: 25px;
+        position: relative;
+    }
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        width: 14px;
+        height: 14px;
+        background: #2563EB;
+        border-radius: 50%;
+        left: -9px;
+        top: 0px;
+    }
+    .timeline-date {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: #2563EB;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .timeline-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #0F172A;
+        margin-top: 2px;
+        margin-bottom: 8px;
+    }
+    .timeline-body {
+        font-size: 0.95rem;
+        color: #334155;
+        line-height: 1.6;
+    }
     .cv-box {
         background-color: #F8FAFC;
         border-left: 5px solid #2563EB;
@@ -57,7 +96,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# --- HERO BANNER  ---
+# --- HERO BANNER ---
 st.markdown(
     """
     <div class="hero-container">
@@ -67,7 +106,7 @@ st.markdown(
                 Plataforma analítica integrada para monitoramento da oferta de acampamentos e demanda de e-commerce outdoor no Brasil.
             </div>
         </div>
-    <div>
+        <div>
             <span class="badge-tag">🏛️ <b>MinTur:</b> Série Histórica de 24 Meses</span>
             <span class="badge-tag">🛍️ <b>Mercado Livre:</b> Destaques da Categoria Camping</span>
             <span class="badge-tag">⚡ Data Integration via REST API</span>
@@ -77,7 +116,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# BLOCO CONCEITUAL (SEMPRE FECHADO POR PADRÃO)
+# BLOCO CONCEITUAL (TRANCADO POR PADRÃO)
 with st.expander(
     "📖 **Fundamentação Legal e Normativa sobre Acampamentos Turísticos & Glamping**",
     expanded=False,
@@ -133,7 +172,6 @@ def carregar_dados_mintur():
     """
     df = pd.read_sql(query, con=engine)
 
-    # TRATAMENTO HÍBRIDO (Suporta separadores '|' e ',')
     def contar_idiomas(val):
         if pd.isna(val) or str(val).strip() in [
             "-",
@@ -312,7 +350,7 @@ st.markdown("---")
 
 
 # ---------------------------------------------------------
-# 5. ABAS NAVEGÁVEIS
+# 5. ABAS NAVEGÁVEIS (MINTUR + ML + TIMELINE)
 # ---------------------------------------------------------
 (
     tab_mapa,
@@ -321,6 +359,7 @@ st.markdown("---")
     tab_insights,
     tab_dados,
     tab_ecommerce,
+    tab_timeline,
 ) = st.tabs([
     "🗺️ Mapa de Acampamentos",
     "📍 Presença Sul de Minas",
@@ -328,10 +367,11 @@ st.markdown("---")
     "📊 Perfil e Porte",
     "📋 Base Concorrentes",
     "🛍️ Mercado Outdoor (ML)",
+    "🛠️ Arquitetura & Timeline",
 ])
 
 
-# --- ABA 1: MAPA INTERATIVO (DIFERENCIAÇÃO VISUAL CLARA) ---
+# --- ABA 1: MAPA INTERATIVO ---
 with tab_mapa:
     st.subheader("Mapeamento Geográfico da Concorrência")
     st.markdown(
@@ -365,7 +405,6 @@ with tab_mapa:
             </div>
         """
 
-        # Ícone e Cor distintos para destacar
         cor_pino = "orange" if is_multi else "blue"
         icone_pino = "globe" if is_multi else "campground"
 
@@ -379,7 +418,7 @@ with tab_mapa:
     st_folium(m, width=1100, height=500)
 
 
-# --- ABA 2: SUL DE MINAS (RAIOS DE DISTÂNCIA) ---
+# --- ABA 2: SUL DE MINAS ---
 with tab_distancia:
     st.subheader("Análise de Adensamento por Faixa de Distância (Sul de Minas)")
     ordem_faixas = [
@@ -487,7 +526,7 @@ with tab_insights:
         st.plotly_chart(fig_id, use_container_width=True)
 
 
-# --- ABA 5: BASE CONCORRENTES (ORDENADA POR DISTÂNCIA REAL COM CONTADOR) ---
+# --- ABA 5: BASE CONCORRENTES ---
 with tab_dados:
     st.subheader("Base Mapeada de Concorrentes")
     st.write(
@@ -496,23 +535,19 @@ with tab_dados:
         " **Contagem/Posição do Concorrente**."
     )
 
-    # 1. Ordena o dataframe por distância real do menor para o maior
     df_tabela_ordenada = df_filtrado.sort_values(
         by="distancia_km", ascending=True
     ).copy()
-
-    # 2. Adiciona a coluna com a contagem/posição sequencial do concorrente
     df_tabela_ordenada["qtd_concorrente_num"] = range(
         1, len(df_tabela_ordenada) + 1
     )
 
-    # 3. Seleção de Colunas
     cols_exibir = [
         col
         for col in [
-            "qtd_concorrente_num",  # Coluna da quantidade/ranking do concorrente
-            "distancia_km",  # Distância real em km
-            "faixa_distancia",  # Faixa de raio
+            "qtd_concorrente_num",
+            "distancia_km",
+            "faixa_distancia",
             "uf",
             "municipio",
             "nome_fantasia",
@@ -563,7 +598,7 @@ with tab_ecommerce:
     with col_title1:
         st.image(
             "https://http2.mlstatic.com/frontend-assets/ui-navigation/5.21.22/mercadolibre/logo__small.png",
-            width=35,
+            width=70,
         )
     with col_title2:
         st.subheader(
@@ -576,7 +611,6 @@ with tab_ecommerce:
 
     st.markdown("---")
 
-    # CARDS DE KPI
     mediana_reviews = df_ml["Avaliações (#)"].median()
     vol_vendas_estimado = int(mediana_reviews * 50)
 
@@ -601,7 +635,6 @@ with tab_ecommerce:
 
     st.markdown("---")
 
-    # GRÁFICO DE MATRIZ
     st.markdown(
         "### 🎯 Matriz de Oportunidades: Preço vs. Volume (Avaliações)"
     )
@@ -620,7 +653,6 @@ with tab_ecommerce:
     )
     st.plotly_chart(fig_ml, use_container_width=True)
 
-    # TABELA DETALHADA
     st.markdown("### 📋 Tabela Detalhada de Produtos & Termos de Destaque")
     st.dataframe(
         df_ml,
@@ -640,7 +672,6 @@ with tab_ecommerce:
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # BOXES INFORMATIVOS
     st.markdown(
         """
         <div class="static-box">
@@ -660,6 +691,163 @@ with tab_ecommerce:
             • <b>Pipelines de Ingestão:</b> Mapeamento de taxonomia via <i>Domain Discovery</i> e consumo de endpoints em lote (<i>Multiget /items</i> e <i>/products</i>).<br>
             • <b>Resiliência & Tratamento:</b> Estruturação defensiva contra erros de permissão (403), nós inexistentes (404) e itens de catálogo sem vendedor ativo.<br>
             • <b>Modelagem Analítica:</b> Criação de <i>Proxy Metrics</i> baseadas em avaliações e logística <i>Fulfillment</i> para estimar volumes de demanda sem viés de outliers.
+        </div>
+    """,
+        unsafe_allow_html=True,
+    )
+
+
+# =========================================================
+# --- ABA 7: ARQUITETURA & TIMELINE DE ENGENHARIA ---
+# =========================================================
+with tab_timeline:
+    st.subheader("🛠️ Engenharia de Dados, Arquitetura & Evolução do Projeto")
+    st.write(
+        "Detalhamento técnico da evolução do ecossistema analítico, desde a"
+        " modelagem relacional de geolocalização até a integração de APIs do"
+        " e-commerce."
+    )
+
+    st.markdown("---")
+
+    # CARDS DE VISÃO GERAL DO STACK
+    c_s1, c_s2, c_s3 = st.columns(3)
+    with c_s1:
+        st.markdown(
+            "#### 🐍 Linguagem & Core\n• **Python 3.11**\n• **Pandas &"
+            " NumPy**\n• **SQLAlchemy & PyMySQL**"
+        )
+    with c_s2:
+        st.markdown(
+            "#### 🛢️ Banco & Engenharia SQL\n• **MySQL (HostGator)**\n•"
+            " **Fórmula Trigonométrica de Haversine**\n• **DBeaver SGBD**"
+        )
+    with c_s3:
+        st.markdown(
+            "#### ☁️ Cloud & REST API\n• **Mercado Livre REST API (OAuth 2.0 +"
+            " PKCE)**\n• **Streamlit Cloud (CI/CD)**\n• **Git / GitHub**"
+        )
+
+    st.markdown("---")
+    st.markdown("### 📜 Linha do Tempo das Etapas de Engenharia")
+
+    # TIMELINE ITEM 1
+    st.markdown(
+        """
+        <div class="timeline-item">
+            <div class="timeline-date">ETAPA 1 • INGESTÃO E PROCESSAMENTO INICIAL</div>
+            <div class="timeline-title">Tratamento Multi-Trimestral da Base Cadastur</div>
+            <div class="timeline-body">
+                • <b>Ingestão Heterogênea:</b> Leitura e padronização de múltiplos arquivos em formato <code>.xls</code> e <code>.xlsx</code> disponibilizados pelo Ministério do Turismo em um horizonte temporal de 24 meses.<br>
+                • <b>ETL e Limpeza de Dados:</b> Normalização de campos textuais com acentuação, deduplicação precisa por número de CNPJ ativo e padronização das colunas temporais de acompanhamento da oferta.
+            </div>
+        </div>
+    """,
+        unsafe_allow_html=True,
+    )
+
+    # TIMELINE ITEM 2
+    st.markdown(
+        """
+        <div class="timeline-item">
+            <div class="timeline-date">ETAPA 2 • MODELAGEM E CÁLCULOS ESPACIAIS EM SQL</div>
+            <div class="timeline-title">Banco de Dados MySQL & Fórmula de Haversine</div>
+            <div class="timeline-body">
+                • <b>Modelagem Relacional em Produção:</b> Criação e otimização das tabelas <code>tb_acampamento_turistico</code> e <code>tb_geolocalizacao_municipios</code> no banco MySQL hospedado em servidor remoto.<br>
+                • <b>Geolocalização via SQL (Haversine):</b> Desenvolvimento de algoritmo espacial em SQL aplicando a fórmula de Haversine para calcular a distância ortodrômica em km entre as coordenadas do polo focal e cada município.<br>
+                • <b>Classificação Dinâmica:</b> Implementação de regras de <code>CASE WHEN</code> no banco de dados para agrupamento automático em faixas de raio espacial (de <i>Até 20 km</i> a <i>Mais de 500 km</i>).
+            </div>
+        </div>
+    """,
+        unsafe_allow_html=True,
+    )
+
+    # TIMELINE ITEM 3
+    st.markdown(
+        """
+        <div class="timeline-item">
+            <div class="timeline-date">ETAPA 3 • CONECTIVIDADE E PARSING DE DADOS COMPLEXOS</div>
+            <div class="timeline-title">Resiliência de Conexão e Lógica de Negócio</div>
+            <div class="timeline-body">
+                • <b>Persistência com SGBD:</b> Resolução de handshakes SSL, timeouts de conexão e recriação automática de datasources entre DBeaver, SQLAlchemy e o servidor de banco de dados.<br>
+                • <b>Parsing de Idiomas:</b> Ajuste fino na lógica de parsing para tratar delimitadores complexos (suportando a barra vertical <code>|</code> e vírgulas), permitindo a correta diferenciação e agrupamento de estabelecimentos com recepção multilíngue (2+ idiomas).
+            </div>
+        </div>
+    """,
+        unsafe_allow_html=True,
+    )
+
+    # TIMELINE ITEM 4
+    st.markdown(
+        """
+        <div class="timeline-item">
+            <div class="timeline-date">ETAPA 4 • CI/CD E GESTÃO DE CREDENCIAIS DE SEGURANÇA</div>
+            <div class="timeline-title">Pipeline de Deploy e Versionamento Seguro</div>
+            <div class="timeline-body">
+                • <b>Versionamento Git/GitHub:</b> Resolução de conflitos de branches, unificação da árvore de commits e blindagem de dados sensíveis com arquivos <code>.gitignore</code>.<br>
+                • <b>Continuous Deployment:</b> Integração do repositório ao Streamlit Cloud com deploy automático a cada <code>git push</code> e gestão de segredos através de variáveis protegidas (Secrets TOML).
+            </div>
+        </div>
+    """,
+        unsafe_allow_html=True,
+    )
+
+    # TIMELINE ITEM 5
+    st.markdown(
+        """
+        <div class="timeline-item">
+            <div class="timeline-date">ETAPA 5 • DASHBOARD ANALÍTICO INTERATIVO</div>
+            <div class="timeline-title">Construção da Interface e Componentes Visuais</div>
+            <div class="timeline-body">
+                • <b>Otimização de Performance:</b> Aplicação de estratégias de cache com <code>@st.cache_data</code> para reuso de queries e redução de acessos ao banco.<br>
+                • <b>Geovisualização e Gráficos:</b> Mapeamento interativo com a biblioteca Folium e gráficos dinâmicos de tendência com Plotly Express.
+            </div>
+        </div>
+    """,
+        unsafe_allow_html=True,
+    )
+
+    # TIMELINE ITEM 6 (HOJE - API MERCADO LIVRE)
+    st.markdown(
+        """
+        <div class="timeline-item">
+            <div class="timeline-date">ETAPA 6 • INTEGRAÇÃO COM API DO E-COMMERCE (MERCADO LIVRE)</div>
+            <div class="timeline-title">Autenticação OAuth 2.0 / PKCE e Pipeline de Demanda</div>
+            <div class="timeline-body">
+                • <b>Segurança e Autenticação PKCE:</b> Implementação do fluxo de autorização OAuth 2.0 com protocolo PKCE (SHA-256) para conectar com a REST API oficial do Mercado Livre.<br>
+                • <b>Mapeamento de Taxonomia:</b> Descoberta dinâmica de categorias via endpoint <code>Domain Discovery</code> e isolamento exclusivo do nicho de Barracas e Equipamentos Outdoor.<br>
+                • <b>Arquitetura Resiliente contra Erros:</b> Tratamento defensivo contra códigos de erro <code>403 Forbidden</code> (rotas privadas de vendedor) e <code>404 Not Found</code> (itens de catálogo inativos).
+            </div>
+        </div>
+    """,
+        unsafe_allow_html=True,
+    )
+
+    # TIMELINE ITEM 7 (HOJE - PROXY METRICS)
+    st.markdown(
+        """
+        <div class="timeline-item">
+            <div class="timeline-date">ETAPA 7 • MODELAGEM DE PROXY METRICS DE DEMANDA</div>
+            <div class="timeline-title">Estimativa Científica de Volume sem Outliers</div>
+            <div class="timeline-body">
+                • <b>Modelagem Analítica:</b> Como dados do tipo <i>Product</i> (catálogo) escondem vendas agregadas, desenvolveu-se uma abordagem de <b>Proxy Metrics</b> utilizando volume de avaliações (taxa de conversão de 1% a 3%) e presença em logística <i>Fulfillment</i> (Envio Full).<br>
+                • <b>Cálculo de Volume Imune a Bias:</b> Utilização do cálculo de mediana de avaliações combinada com multiplicador de conversão para apresentar um número realista de volume de vendas imune a valores discrepantes (outliers).
+            </div>
+        </div>
+    """,
+        unsafe_allow_html=True,
+    )
+
+    # TIMELINE ITEM 8 (HOJE - REFINAMENTOS DE UX/UI)
+    st.markdown(
+        """
+        <div class="timeline-item">
+            <div class="timeline-date">ETAPA 8 • REFINAMENTO DE UX, ORDENAÇÃO E DESIGN SYSTEM</div>
+            <div class="timeline-title">Interface Executiva e Ordenação Sequencial de Concorrentes</div>
+            <div class="timeline-body">
+                • <b>Mapeamento por Proximidade Exata:</b> Inclusão da ordenação sequencial do concorrente mais próximo ao mais distante (<code>#1º, #2º...</code>) exibindo a distância exata em km.<br>
+                • <b>Redesign do Hero Banner:</b> Design System moderno com Hero Banner integrado e agrupamento em abas estratégicas para apresentação de impacto no portfólio.
+            </div>
         </div>
     """,
         unsafe_allow_html=True,
