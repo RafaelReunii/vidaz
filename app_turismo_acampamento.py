@@ -2,13 +2,12 @@ import os
 import folium
 import pandas as pd
 import plotly.express as px
-import requests
 from sqlalchemy import create_engine
 import streamlit as st
 from streamlit_folium import st_folium
 
 # ---------------------------------------------------------
-# 1. CONFIGURAÇÃO DE PÁGINA & TEMA
+# 1. CONFIGURAÇÃO DE PÁGINA & TEMA VISUAL
 # ---------------------------------------------------------
 st.set_page_config(
     page_title="Inteligência de Mercado | Acampamentos Turísticos",
@@ -17,22 +16,21 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Estilização CSS Personalizada (Hero Banner & Cards)
 st.markdown(
     """
     <style>
     .hero-container {
         background: linear-gradient(135deg, #0F172A 0%, #1E3A8A 100%);
-        padding: 30px;
+        padding: 28px;
         border-radius: 16px;
         color: white;
         margin-bottom: 25px;
-        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15);
     }
-    .hero-title { font-size: 2.3rem; font-weight: 800; margin-bottom: 8px; color: #FFFFFF; }
-    .hero-subtitle { font-size: 1.1rem; color: #93C5FD; font-weight: 400; margin-bottom: 18px; }
+    .hero-title { font-size: 2.2rem; font-weight: 800; margin-bottom: 6px; color: #FFFFFF; }
+    .hero-subtitle { font-size: 1.05rem; color: #93C5FD; font-weight: 400; margin-bottom: 18px; }
     .badge-tag {
-        background-color: rgba(255, 255, 255, 0.15);
+        background-color: rgba(255, 255, 255, 0.12);
         padding: 6px 14px;
         border-radius: 20px;
         font-size: 0.85rem;
@@ -59,13 +57,18 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# --- HOME REDESENHADA (HERO BANNER) ---
+# --- HERO BANNER COM LOGO DO MERCADO LIVRE ---
 st.markdown(
     """
     <div class="hero-container">
-        <div class="hero-title">🏕️ Panorama de Inteligência: Mercado Outdoor & Campismo</div>
-        <div class="hero-subtitle">
-            Plataforma analítica integrada para monitoramento da oferta de acampamentos e demanda de e-commerce outdoor no Brasil.
+        <div style="display: flex; align-items: center; gap: 18px; margin-bottom: 10px;">
+            <img src="https://http2.mlstatic.com/frontend-assets/ui-navigation/5.21.22/mercadolibre/logo__small.png" width="60" style="background: #FFE600; padding: 6px; border-radius: 10px;">
+            <div>
+                <div class="hero-title">🏕️ Panorama de Inteligência: Mercado Outdoor & Campismo</div>
+                <div class="hero-subtitle">
+                    Plataforma analítica integrada para monitoramento da oferta de acampamentos e demanda de e-commerce outdoor no Brasil.
+                </div>
+            </div>
         </div>
         <div>
             <span class="badge-tag">🏛️ <b>MinTur:</b> Série Histórica de 24 Meses</span>
@@ -77,19 +80,25 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# BOX DO CONCEITO LEGAL (SEMPRE FECHADO POR PADRÃO)
+# BLOCO CONCEITUAL (SEMPRE FECHADO POR PADRÃO)
 with st.expander(
-    "📖 **Conceito Legal de Acampamento Turístico (Diretrizes MTur/Cadastur)**",
+    "📖 **Fundamentação Legal e Normativa sobre Acampamentos Turísticos & Glamping**",
     expanded=False,
 ):
     st.markdown("""
-    **Definição Oficial (Lei Geral do Turismo - Lei nº 11.771/2008):**  
-    Consideram-se **Acampamentos Turísticos** as áreas ao ar livre dotadas de infraestrutura e instalações destinadas ao alojamento temporário de praticantes de campismo, com prestação de serviços de apoio às atividades recreativas e de lazer.
+    ### 1. Diretriz Legal Nacional (Lei Geral do Turismo - Lei nº 11.771/2008 / MTur)
+    > *"Consideram-se **Acampamentos Turísticos** as áreas ao ar livre dotadas de infraestrutura e instalações destinadas ao alojamento temporário de praticantes de campismo, com prestação de serviços de apoio às atividades recreativas e de lazer."*
+    
+    ---
+    
+    ### 2. Padrão Internacional & Sustentabilidade (ONU Turismo / OMT & ABNT NBR ISO 20611)
+    * **Instalações Temporárias e Amovíveis:** As diretrizes internacionais da **ONU Turismo (UN Tourism)** enquadram como ecoturismo e hospitalidade outdoor o uso de **estruturas leves, móveis ou pré-fabricadas** (como barracas estruturadas, domos geodésicos e cabanas modulares), desde que assegurem reversibilidade e mínimo impacto no solo.
+    * **Conceito de Glamping (*Glamorous Camping*):** A norma técnica **ABNT NBR ISO 20611** reconhece a evolução dos acampamentos para serviços de alta experiência (*Glamping*), caracterizados por **unidades habitacionais temporárias privativas** integradas à natureza, unindo a rusticidade do ambiente com o conforto da hospedagem boutique.
     """)
 
 
 # ---------------------------------------------------------
-# 2. CONEXÃO E CARGA DE DADOS (MINTUR & MERCADO LIVRE)
+# 2. CONEXÃO E CARGA DE DADOS
 # ---------------------------------------------------------
 @st.cache_data(ttl=3600)
 def carregar_dados_mintur():
@@ -127,10 +136,22 @@ def carregar_dados_mintur():
     """
     df = pd.read_sql(query, con=engine)
 
+    # TRATAMENTO HÍBRIDO (Suporta separadores '|' e ',')
     def contar_idiomas(val):
-        if pd.isna(val) or val in ["-", "Não informado", ""]:
+        if pd.isna(val) or str(val).strip() in [
+            "-",
+            "Não informado",
+            "",
+            "NENHUM",
+            "Não Informado",
+            "None",
+        ]:
             return 0
-        return len([i.strip() for i in str(val).split(",") if i.strip()])
+        val_normalizado = str(val).replace(",", "|")
+        idiomas_lista = [
+            i.strip() for i in val_normalizado.split("|") if i.strip()
+        ]
+        return len(idiomas_lista)
 
     df["qtd_idiomas"] = df["idiomas"].apply(contar_idiomas)
     df["tem_multilingue_2plus"] = df["qtd_idiomas"] >= 2
@@ -139,7 +160,6 @@ def carregar_dados_mintur():
 
 @st.cache_data(ttl=3600)
 def carregar_dados_mercadolivre():
-    # Base estruturada extraída via API do Mercado Livre (Snapshot Camping)
     dados = [
         {
             "Produto / Termo": "Barraca Camping Automática 4 Pessoas Impermeável",
@@ -219,12 +239,12 @@ try:
     df_raw = carregar_dados_mintur()
     df_ml = carregar_dados_mercadolivre()
 except Exception as e:
-    st.error(f"⚠️ Erro ao carregar as bases de dados: {e}")
+    st.error(f"⚠️ Erro ao conectar ao banco de dados: {e}")
     st.stop()
 
 
 # ---------------------------------------------------------
-# 3. FILTROS LATERAIS (COM ORIENTAÇÃO DE UX)
+# 3. FILTROS LATERAIS (SIDEBAR)
 # ---------------------------------------------------------
 st.sidebar.title("Filtros de Pesquisa")
 st.sidebar.caption(
@@ -257,7 +277,7 @@ perfil_cap = st.sidebar.selectbox(
     "Perfil de Porte / Capacidade:",
     options=list(opcoes_capacidade.keys()),
     index=0,
-    help="Filtra estabelecimentos de acordo com o porte de operação.",
+    help="Filtra estabelecimentos de acordo com o adensamento e capacidade declarada.",
 )
 
 min_cap, max_cap = opcoes_capacidade[perfil_cap]
@@ -271,7 +291,7 @@ df_filtrado = df_raw[
 
 
 # ---------------------------------------------------------
-# 4. KPIS MINTUR DA HOME
+# 4. KPIS MINTUR
 # ---------------------------------------------------------
 col_k1, col_k2, col_k3, col_k4 = st.columns(4)
 with col_k1:
@@ -295,7 +315,7 @@ st.markdown("---")
 
 
 # ---------------------------------------------------------
-# 5. ABAS NAVEGÁVEIS (MINTUR + E-COMMERCE ML)
+# 5. ABAS NAVEGÁVEIS
 # ---------------------------------------------------------
 (
     tab_mapa,
@@ -314,9 +334,14 @@ st.markdown("---")
 ])
 
 
-# --- ABA 1: MAPA ---
+# --- ABA 1: MAPA INTERATIVO (DIFERENCIAÇÃO VISUAL CLARA) ---
 with tab_mapa:
     st.subheader("Mapeamento Geográfico da Concorrência")
+    st.markdown(
+        "🟠 **Laranja (Globo 🌐):** Atendimento Multilíngue Diferenciado (2+"
+        " Idiomas) | 🔵 **Azul (Barraca ⛺):** Atendimento Padrão (1 Idioma)"
+    )
+
     m = folium.Map(
         location=[-22.4500, -45.9000], zoom_start=7, tiles="OpenStreetMap"
     )
@@ -327,27 +352,37 @@ with tab_mapa:
         muni = row.get("municipio", "Não informado")
         cap = row.get("capacidade", 0)
         faixa = row.get("faixa_distancia", "N/A")
+        idiomas_str = row.get("idiomas", "Não informado")
+        is_multi = row.get("tem_multilingue_2plus")
 
         popup_html = f"""
-            <div style="font-family: Arial; width: 220px;">
+            <div style="font-family: Arial; width: 230px;">
                 <h4 style="margin:0; color:#1E3A8A;">{nome}</h4>
-                <p style="margin:3px 0;"><b>Município:</b> {muni} ({row.get('uf')})</p>
-                <p style="margin:3px 0;"><b>Capacidade:</b> {cap} hóspedes</p>
-                <p style="margin:3px 0;"><b>Faixa Raio:</b> {faixa}</p>
+                <p style="margin:4px 0;"><b>Município:</b> {muni} ({row.get('uf')})</p>
+                <p style="margin:4px 0;"><b>Capacidade:</b> {cap} hóspedes</p>
+                <p style="margin:4px 0;"><b>Raio Focal:</b> {faixa}</p>
+                <p style="margin:4px 0;"><b>Idiomas:</b> {idiomas_str}</p>
+                <p style="margin:4px 0; color:{'#D97706' if is_multi else '#2563EB'}; font-weight:bold;">
+                    {'🌐 Multilíngue (2+ Idiomas)' if is_multi else '⛺ Atendimento Padrão'}
+                </p>
             </div>
         """
-        cor = "orange" if row.get("tem_multilingue_2plus") else "blue"
+
+        # Ícone e Cor distintos para destacar
+        cor_pino = "orange" if is_multi else "blue"
+        icone_pino = "globe" if is_multi else "campground"
+
         folium.Marker(
             location=[row["latitude"], row["longitude"]],
-            popup=folium.Popup(popup_html, max_width=250),
-            tooltip=f"{nome} ({muni})",
-            icon=folium.Icon(color=cor, icon="campground", prefix="fa"),
+            popup=folium.Popup(popup_html, max_width=260),
+            tooltip=f"{'🌐 [2+ IDIOMAS] ' if is_multi else ''}{nome} ({muni})",
+            icon=folium.Icon(color=cor_pino, icon=icone_pino, prefix="fa"),
         ).add_to(m)
 
     st_folium(m, width=1100, height=500)
 
 
-# --- ABA 2: SUL DE MINAS ---
+# --- ABA 2: SUL DE MINAS (RAIOS DE DISTÂNCIA) ---
 with tab_distancia:
     st.subheader("Análise de Adensamento por Faixa de Distância (Sul de Minas)")
     ordem_faixas = [
@@ -375,14 +410,24 @@ with tab_distancia:
 
     col_d1, col_d2 = st.columns([1, 1])
     with col_d1:
-        st.dataframe(df_faixas, use_container_width=True, hide_index=True)
+        st.dataframe(
+            df_faixas,
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "faixa_distancia": "Faixa de Distância",
+                "qtd_locais": "Qtd Locais",
+                "capacidade_total": "Capacidade (Leitos)",
+                "locais_multilingues_2plus": "Locais (2+ Idiomas)",
+            },
+        )
     with col_d2:
         fig_faixa = px.bar(
             df_faixas,
             x="faixa_distancia",
             y="capacidade_total",
             color="locais_multilingues_2plus",
-            title="Capacidade por Raio de Distância",
+            title="Capacidade em Leitos por Raio e Oferta Multilíngue",
             color_continuous_scale="Blues",
         )
         st.plotly_chart(fig_faixa, use_container_width=True)
@@ -410,12 +455,13 @@ with tab_historico:
         y="numero_de_inscricao_do_cnpj",
         color="uf",
         markers=True,
-        title="Evolução de Estabelecimentos Mapeados pelo MinTur",
+        title="Evolução do Número de Estabelecimentos por Estado",
+        color_discrete_sequence=px.colors.qualitative.Set2,
     )
     st.plotly_chart(fig_evol, use_container_width=True)
 
 
-# --- ABA 4: PERFIL ---
+# --- ABA 4: PERFIL E PORTE ---
 with tab_insights:
     st.subheader("Indicadores Complementares de Mercado")
     col_i1, col_i2 = st.columns(2)
@@ -425,6 +471,7 @@ with tab_insights:
             names="porte",
             title="Proporção por Porte Declarado",
             hole=0.4,
+            color_discrete_sequence=px.colors.sequential.Darkmint,
         )
         st.plotly_chart(fig_porte, use_container_width=True)
     with col_i2:
@@ -436,40 +483,90 @@ with tab_insights:
             df_idiomas,
             x="qtd_idiomas",
             y="total",
-            title="Idiomas na Recepção",
+            title="Quantidade de Idiomas na Recepção",
+            color="total",
+            color_continuous_scale="Greens",
         )
         st.plotly_chart(fig_id, use_container_width=True)
 
 
-# --- ABA 5: BASE CONCORRENTES ---
+# --- ABA 5: BASE CONCORRENTES (ORDENADA POR DISTÂNCIA REAL COM CONTADOR) ---
 with tab_dados:
-    st.subheader("Base Mapeada de Concorrentes (MinTur)")
+    st.subheader("Base Mapeada de Concorrentes")
+    st.write(
+        "A tabela está ordenada por padrão a partir da **Distância Real (km)**"
+        " (do mais próximo ao mais distante). A primeira coluna exibe a"
+        " **Contagem/Posição do Concorrente**."
+    )
+
+    # 1. Ordena o dataframe por distância real do menor para o maior
+    df_tabela_ordenada = df_filtrado.sort_values(
+        by="distancia_km", ascending=True
+    ).copy()
+
+    # 2. Adiciona a coluna com a contagem/posição sequencial do concorrente
+    df_tabela_ordenada["qtd_concorrente_num"] = range(
+        1, len(df_tabela_ordenada) + 1
+    )
+
+    # 3. Seleção de Colunas
     cols_exibir = [
         col
         for col in [
+            "qtd_concorrente_num",  # Coluna da quantidade/ranking do concorrente
+            "distancia_km",  # Distância real em km
+            "faixa_distancia",  # Faixa de raio
             "uf",
             "municipio",
-            "faixa_distancia",
             "nome_fantasia",
             "porte",
             "capacidade",
             "idiomas",
+            "qtd_idiomas",
+            "telefone_comercial",
+            "e_mail_comercial",
         ]
-        if col in df_filtrado.columns
+        if col in df_tabela_ordenada.columns
     ]
-    st.dataframe(df_filtrado[cols_exibir], use_container_width=True)
+
+    st.dataframe(
+        df_tabela_ordenada[cols_exibir],
+        use_container_width=True,
+        hide_index=True,
+        column_config={
+            "qtd_concorrente_num": st.column_config.NumberColumn(
+                "Nº / Qtd Concorrente",
+                help=(
+                    "Posição sequencial do concorrente por ordem de proximidade"
+                ),
+                format="#%d",
+            ),
+            "distancia_km": st.column_config.NumberColumn(
+                "Distância Real (km)",
+                help="Distância em quilômetros exatos até o polo focal no Sul de Minas",
+                format="%d km",
+            ),
+            "faixa_distancia": "Faixa de Raio",
+            "qtd_idiomas": st.column_config.NumberColumn(
+                "Total Idiomas",
+                help="Soma dos idiomas atendidos pelo estabelecimento",
+                format="%d",
+            ),
+            "idiomas": "Lista de Idiomas",
+            "capacidade": st.column_config.NumberColumn(
+                "Capacidade (Leitos)", format="%d"
+            ),
+        },
+    )
 
 
-# =========================================================
-# --- ABA 6: E-COMMERCE MERCADO LIVRE (3 VISÕES & CARDS) ---
-# =========================================================
+# --- ABA 6: E-COMMERCE MERCADO LIVRE ---
 with tab_ecommerce:
-    # Logo do Mercado Livre + Título
     col_title1, col_title2 = st.columns([0.12, 0.88])
     with col_title1:
         st.image(
             "https://http2.mlstatic.com/frontend-assets/ui-navigation/5.21.22/mercadolibre/logo__small.png",
-            width=70,
+            width=35,
         )
     with col_title2:
         st.subheader(
@@ -482,9 +579,8 @@ with tab_ecommerce:
 
     st.markdown("---")
 
-    # 1. VISÃO 1: CARDS DE KPI (COM O CARD DE VOLUME APROXIMADO)
+    # CARDS DE KPI
     mediana_reviews = df_ml["Avaliações (#)"].median()
-    # Fator de conversão médio: 1 review a cada 50 vendas (2% de taxa de review)
     vol_vendas_estimado = int(mediana_reviews * 50)
 
     c1, c2, c3, c4 = st.columns(4)
@@ -508,11 +604,10 @@ with tab_ecommerce:
 
     st.markdown("---")
 
-    # 2. VISÃO 2: GRÁFICO DE MATRIZ (PREÇO X AVALIAÇÕES)
+    # GRÁFICO DE MATRIZ
     st.markdown(
         "### 🎯 Matriz de Oportunidades: Preço vs. Volume (Avaliações)"
     )
-
     fig_ml = px.scatter(
         df_ml,
         x="Preço (R$)",
@@ -528,9 +623,8 @@ with tab_ecommerce:
     )
     st.plotly_chart(fig_ml, use_container_width=True)
 
-    # 3. VISÃO 3: TABELA DETALHADA COM BARRA VISUAL
+    # TABELA DETALHADA
     st.markdown("### 📋 Tabela Detalhada de Produtos & Termos de Destaque")
-
     st.dataframe(
         df_ml,
         use_container_width=True,
@@ -549,9 +643,7 @@ with tab_ecommerce:
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # --- DOIS BOXES AO FIM DA ABA ---
-
-    # BOX 1: DATA E STATUS ESTÁTICO
+    # BOXES INFORMATIVOS
     st.markdown(
         """
         <div class="static-box">
@@ -563,7 +655,6 @@ with tab_ecommerce:
         unsafe_allow_html=True,
     )
 
-    # BOX 2: PROCESSO DE ENGENHARIA DE DADOS (PARA DESTACAR NO CV)
     st.markdown(
         """
         <div class="cv-box">
