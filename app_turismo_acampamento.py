@@ -16,7 +16,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Estilização CSS Personalizada (Hero Banner, Timeline & Badges)
+# Estilização CSS Personalizada (Hero Banner, Navegação por URL & Timeline)
 st.markdown(
     """
     <style>
@@ -40,6 +40,34 @@ st.markdown(
         border: 1px solid rgba(255, 255, 255, 0.2);
     }
     
+    /* ESTILIZAÇÃO DO NAVEGADOR DE ABAS (RADIO CUSTOMIZADO) */
+    div[data-testid="stRadio"] > div {
+        display: flex;
+        flex-direction: row;
+        gap: 8px;
+        overflow-x: auto;
+        padding-bottom: 10px;
+    }
+    div[data-testid="stRadio"] label {
+        background-color: #F1F5F9;
+        border: 1px solid #CBD5E1;
+        border-radius: 8px;
+        padding: 8px 16px;
+        cursor: pointer;
+        font-weight: 600;
+        color: #334155;
+        transition: all 0.2s ease-in-out;
+    }
+    div[data-testid="stRadio"] label:hover {
+        background-color: #E2E8F0;
+        color: #1E3A8A;
+    }
+    div[data-testid="stRadio"] label[data-checked="true"] {
+        background-color: #1E3A8A !important;
+        color: white !important;
+        border-color: #1E3A8A !important;
+    }
+
     /* CSS DA TIMELINE DE ENGENHARIA DO PROJETO */
     .timeline-item {
         border-left: 4px solid #2563EB;
@@ -350,17 +378,10 @@ st.markdown("---")
 
 
 # ---------------------------------------------------------
-# 5. ABAS NAVEGÁVEIS (COM LÓGICA DE URL E SELEÇÃO AUTOMÁTICA)
+# 5. ABAS NAVEGÁVEIS (COM LÓGICA DE URL QUE FUNCIONA 100%)
 # ---------------------------------------------------------
 query_params = st.query_params
-aba_selecionada = str(query_params.get("aba", "mapa")).lower()
-
-# Mapeia qual índice de aba abrir
-indice_inicial = 0
-if aba_selecionada == "timeline":
-    indice_inicial = 6
-elif aba_selecionada == "ecommerce":
-    indice_inicial = 5
+aba_param = str(query_params.get("aba", "mapa")).lower()
 
 lista_abas = [
     "🗺️ Mapa de Acampamentos",
@@ -372,20 +393,26 @@ lista_abas = [
     "🛠️ Arquitetura & Timeline",
 ]
 
-# AQUI ESTAVA O SEGREDO: Criar o Radio/Tabs associado ao índice inicial
-(
-    tab_mapa,
-    tab_distancia,
-    tab_historico,
-    tab_insights,
-    tab_dados,
-    tab_ecommerce,
-    tab_timeline,
-) = st.tabs(lista_abas)
+# Mapeia o parâmetro ?aba= para o nome exato da opção
+indice_default = 0
+if aba_param == "timeline":
+    indice_default = 6
+elif aba_param == "ecommerce":
+    indice_default = 5
+
+# NAVEGAÇÃO CUSTOMIZADA BASEADA EM RADIO (SUPORTA URL PERFEITAMENTE)
+aba_ativa = st.radio(
+    "Navegação por Abas:",
+    options=lista_abas,
+    index=indice_default,
+    label_visibility="collapsed",
+)
+
+st.markdown("<br>", unsafe_allow_html=True)
 
 
 # --- ABA 1: MAPA INTERATIVO ---
-with tab_mapa:
+if aba_ativa == "🗺️ Mapa de Acampamentos":
     st.subheader("Mapeamento Geográfico da Concorrência")
     st.markdown(
         "🟠 **Laranja (Globo 🌐):** Atendimento Multilíngue Diferenciado (2+"
@@ -432,7 +459,7 @@ with tab_mapa:
 
 
 # --- ABA 2: SUL DE MINAS ---
-with tab_distancia:
+elif aba_ativa == "📍 Presença Sul de Minas":
     st.subheader("Análise de Adensamento por Faixa de Distância (Sul de Minas)")
     ordem_faixas = [
         "Até 20 km",
@@ -483,7 +510,7 @@ with tab_distancia:
 
 
 # --- ABA 3: SÉRIE HISTÓRICA ---
-with tab_historico:
+elif aba_ativa == "📈 Série Histórica (24M)":
     st.subheader("Evolução Histórica da Oferta (24 Meses)")
     df_hist_full = df_raw[
         (df_raw["uf"].isin(selected_ufs))
@@ -511,7 +538,7 @@ with tab_historico:
 
 
 # --- ABA 4: PERFIL E PORTE ---
-with tab_insights:
+elif aba_ativa == "📊 Perfil e Porte":
     st.subheader("Indicadores Complementares de Mercado")
     col_i1, col_i2 = st.columns(2)
     with col_i1:
@@ -540,7 +567,7 @@ with tab_insights:
 
 
 # --- ABA 5: BASE CONCORRENTES ---
-with tab_dados:
+elif aba_ativa == "📋 Base Concorrentes":
     st.subheader("Base Mapeada de Concorrentes")
     st.write(
         "A tabela está ordenada por padrão a partir da **Distância Real (km)**"
@@ -605,13 +632,13 @@ with tab_dados:
     )
 
 
-# --- ABA 6: E-COMMERCE MERCADO LIVRE ---
-with tab_ecommerce:
-    col_title1, col_title2 = st.columns([0.12, 0.88])
+# --- ABA 6: E-COMMERCE MERCADO LIVRE (COM LOGO DE 35PX) ---
+elif aba_ativa == "🛍️ Mercado Outdoor (ML)":
+    col_title1, col_title2 = st.columns([0.06, 0.94])
     with col_title1:
         st.image(
             "https://http2.mlstatic.com/frontend-assets/ui-navigation/5.21.22/mercadolibre/logo__small.png",
-            width=70,
+            width=35,
         )
     with col_title2:
         st.subheader(
@@ -710,10 +737,8 @@ with tab_ecommerce:
     )
 
 
-# =========================================================
 # --- ABA 7: ARQUITETURA & TIMELINE DE ENGENHARIA ---
-# =========================================================
-with tab_timeline:
+elif aba_ativa == "🛠️ Arquitetura & Timeline":
     st.subheader("🛠️ Engenharia de Dados, Arquitetura & Evolução do Projeto")
     st.write(
         "Detalhamento técnico da evolução do ecossistema analítico, desde a"
