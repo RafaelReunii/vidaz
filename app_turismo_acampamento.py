@@ -352,6 +352,18 @@ st.markdown("---")
 # ---------------------------------------------------------
 # 5. ABAS NAVEGÁVEIS (MINTUR + ML + TIMELINE)
 # ---------------------------------------------------------
+# --- LÓGICA DE DIRECIONAMENTO VIA QUERY PARAMS (?aba=timeline) ---
+query_params = st.query_params
+aba_selecionada = query_params.get("aba", "mapa")
+
+# Define o índice inicial com base na URL
+indice_inicial = 0
+if aba_selecionada == "timeline":
+    indice_inicial = 6  # Posição da aba Arquitetura & Timeline (começa em 0)
+elif aba_selecionada == "ecommerce":
+    indice_inicial = 5
+
+# --- ABAS NAVEGÁVEIS ---
 (
     tab_mapa,
     tab_distancia,
@@ -369,7 +381,6 @@ st.markdown("---")
     "🛍️ Mercado Outdoor (ML)",
     "🛠️ Arquitetura & Timeline",
 ])
-
 
 # --- ABA 1: MAPA INTERATIVO ---
 with tab_mapa:
