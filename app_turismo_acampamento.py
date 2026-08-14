@@ -350,20 +350,29 @@ st.markdown("---")
 
 
 # ---------------------------------------------------------
-# 5. ABAS NAVEGÁVEIS (MINTUR + ML + TIMELINE)
+# 5. ABAS NAVEGÁVEIS (COM LÓGICA DE URL E SELEÇÃO AUTOMÁTICA)
 # ---------------------------------------------------------
-# --- LÓGICA DE DIRECIONAMENTO VIA QUERY PARAMS (?aba=timeline) ---
 query_params = st.query_params
-aba_selecionada = query_params.get("aba", "mapa")
+aba_selecionada = str(query_params.get("aba", "mapa")).lower()
 
-# Define o índice inicial com base na URL
+# Mapeia qual índice de aba abrir
 indice_inicial = 0
 if aba_selecionada == "timeline":
-    indice_inicial = 6  # Posição da aba Arquitetura & Timeline (começa em 0)
+    indice_inicial = 6
 elif aba_selecionada == "ecommerce":
     indice_inicial = 5
 
-# --- ABAS NAVEGÁVEIS ---
+lista_abas = [
+    "🗺️ Mapa de Acampamentos",
+    "📍 Presença Sul de Minas",
+    "📈 Série Histórica (24M)",
+    "📊 Perfil e Porte",
+    "📋 Base Concorrentes",
+    "🛍️ Mercado Outdoor (ML)",
+    "🛠️ Arquitetura & Timeline",
+]
+
+# AQUI ESTAVA O SEGREDO: Criar o Radio/Tabs associado ao índice inicial
 (
     tab_mapa,
     tab_distancia,
@@ -372,17 +381,10 @@ elif aba_selecionada == "ecommerce":
     tab_dados,
     tab_ecommerce,
     tab_timeline,
-) = st.tabs([
-    "🗺️ Mapa de Acampamentos",
-    "📍 Presença Sul de Minas",
-    "📈 Série Histórica (24M)",
-    "📊 Perfil e Porte",
-    "📋 Base Concorrentes",
-    "🛍️ Mercado Outdoor (ML)",
-    "🛠️ Arquitetura & Timeline",
-])
+) = st.tabs(lista_abas)
 
-# --- ABA 1: MAPA INTERATIVO - Teste ---
+
+# --- ABA 1: MAPA INTERATIVO ---
 with tab_mapa:
     st.subheader("Mapeamento Geográfico da Concorrência")
     st.markdown(
@@ -721,7 +723,6 @@ with tab_timeline:
 
     st.markdown("---")
 
-    # CARDS DE VISÃO GERAL DO STACK
     c_s1, c_s2, c_s3 = st.columns(3)
     with c_s1:
         st.markdown(
@@ -742,7 +743,6 @@ with tab_timeline:
     st.markdown("---")
     st.markdown("### 📜 Linha do Tempo das Etapas de Engenharia")
 
-    # TIMELINE ITEM 1
     st.markdown(
         """
         <div class="timeline-item">
@@ -757,7 +757,6 @@ with tab_timeline:
         unsafe_allow_html=True,
     )
 
-    # TIMELINE ITEM 2
     st.markdown(
         """
         <div class="timeline-item">
@@ -773,7 +772,6 @@ with tab_timeline:
         unsafe_allow_html=True,
     )
 
-    # TIMELINE ITEM 3
     st.markdown(
         """
         <div class="timeline-item">
@@ -788,7 +786,6 @@ with tab_timeline:
         unsafe_allow_html=True,
     )
 
-    # TIMELINE ITEM 4
     st.markdown(
         """
         <div class="timeline-item">
@@ -803,7 +800,6 @@ with tab_timeline:
         unsafe_allow_html=True,
     )
 
-    # TIMELINE ITEM 5
     st.markdown(
         """
         <div class="timeline-item">
@@ -818,7 +814,6 @@ with tab_timeline:
         unsafe_allow_html=True,
     )
 
-    # TIMELINE ITEM 6 (HOJE - API MERCADO LIVRE)
     st.markdown(
         """
         <div class="timeline-item">
@@ -834,7 +829,6 @@ with tab_timeline:
         unsafe_allow_html=True,
     )
 
-    # TIMELINE ITEM 7 (HOJE - PROXY METRICS)
     st.markdown(
         """
         <div class="timeline-item">
@@ -849,7 +843,6 @@ with tab_timeline:
         unsafe_allow_html=True,
     )
 
-    # TIMELINE ITEM 8 (HOJE - REFINAMENTOS DE UX/UI)
     st.markdown(
         """
         <div class="timeline-item">
