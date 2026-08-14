@@ -382,7 +382,7 @@ elif aba_selecionada == "ecommerce":
     "🛠️ Arquitetura & Timeline",
 ])
 
-# --- ABA 1: MAPA INTERATIVO ---
+# --- ABA 1: MAPA INTERATIVO - Teste ---
 with tab_mapa:
     st.subheader("Mapeamento Geográfico da Concorrência")
     st.markdown(
