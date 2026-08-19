@@ -449,8 +449,8 @@ if st.session_state.modulo_ativo == "🏛️ Oferta & Concorrência (MinTur)":
     with tab_mapa:
         st.subheader("Mapeamento Geográfico da Concorrência")
         st.markdown(
-            "Globo 🟠: Atendimento Multilíngue Diferenciado (2+ Idiomas) |"
-            " Barraca 🔵: Atendimento Padrão (1 Idioma)"
+            "Globo 🟠: **Atendimento Multilíngue (2+ Idiomas)** |"
+            " Barraca 🔵: **Atendimento Padrão (1 Idioma)**"
         )
 
         m = folium.Map(
