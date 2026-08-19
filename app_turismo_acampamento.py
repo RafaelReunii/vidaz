@@ -337,7 +337,7 @@ opcoes_capacidade = {
 }
 
 perfil_cap = st.sidebar.selectbox(
-    "Perfil de Porte / Capacidade:",
+    "Perfil por Capacidade de hospedagem:",
     options=list(opcoes_capacidade.keys()),
     index=0,
     help="Filtra estabelecimentos de acordo com o adensamento e capacidade declarada.",
@@ -415,8 +415,8 @@ st.markdown("<br>", unsafe_allow_html=True)
 if aba_ativa == "🗺️ Mapa de Acampamentos":
     st.subheader("Mapeamento Geográfico da Concorrência")
     st.markdown(
-        "🟠 **Laranja (Globo 🌐):** Atendimento Multilíngue Diferenciado (2+"
-        " Idiomas) | 🔵 **Azul (Barraca ⛺):** Atendimento Padrão (1 Idioma)"
+        "Globo 🟠:** Atendimento Multilíngue Diferenciado (2+"
+        " Idiomas) | Barraca 🔵:** Atendimento Padrão (1 Idioma)"
     )
 
     m = folium.Map(
