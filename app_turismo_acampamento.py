@@ -415,8 +415,8 @@ st.markdown("<br>", unsafe_allow_html=True)
 if aba_ativa == "🗺️ Mapa de Acampamentos":
     st.subheader("Mapeamento Geográfico da Concorrência")
     st.markdown(
-        "Globo 🟠:** Atendimento Multilíngue Diferenciado (2+"
-        " Idiomas) | Barraca 🔵:** Atendimento Padrão (1 Idioma)"
+        "Globo 🟠:Atendimento Multilíngue Diferenciado (2+"
+        " Idiomas) | Barraca 🔵:Atendimento Padrão (1 Idioma)"
     )
 
     m = folium.Map(
