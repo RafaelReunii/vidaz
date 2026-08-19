@@ -16,7 +16,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Estilização CSS Personalizada (Hero Banner, Timeline & Sidebar Menu)
+# Estilização CSS Personalizada (Hero Banner, Timeline & Sincronia de Layout)
 st.markdown(
     """
     <style>
@@ -40,6 +40,35 @@ st.markdown(
         border: 1px solid rgba(255, 255, 255, 0.2);
     }
     
+    /* ESTILIZAÇÃO DOS BOTÕES DE MÓDULO ABAIXO DO HERO */
+    div[data-testid="stRadio"] > div {
+        display: flex;
+        flex-direction: row;
+        gap: 12px;
+        padding-bottom: 5px;
+    }
+    div[data-testid="stRadio"] label {
+        background-color: #F8FAFC;
+        border: 2px solid #E2E8F0;
+        border-radius: 12px;
+        padding: 12px 20px;
+        cursor: pointer;
+        font-weight: 700;
+        color: #334155;
+        transition: all 0.2s ease-in-out;
+    }
+    div[data-testid="stRadio"] label:hover {
+        background-color: #EFF6FF;
+        border-color: #93C5FD;
+        color: #1E3A8A;
+    }
+    div[data-testid="stRadio"] label[data-checked="true"] {
+        background-color: #1E3A8A !important;
+        color: white !important;
+        border-color: #1E3A8A !important;
+        box-shadow: 0 4px 12px rgba(30, 58, 138, 0.25);
+    }
+
     /* CSS DA TIMELINE DE ENGENHARIA DO PROJETO */
     .timeline-item {
         border-left: 4px solid #2563EB;
@@ -116,7 +145,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# BLOCO CONCEITUAL GLOBAL (TRANCADO POR PADRÃO)
+# BLOCO CONCEITUAL GLOBAL
 with st.expander(
     "📖 **Fundamentação Legal e Normativa sobre Acampamentos Turísticos & Glamping**",
     expanded=False,
@@ -279,28 +308,60 @@ except Exception as e:
 
 
 # ---------------------------------------------------------
-# 3. MENU INTEGRADO NA SIDEBAR (ESTILO SAAS / DASHBOARD)
+# 3. GERENCIAMENTO DE ESTADO & GERENCIADOR DE SINCRONIA
+# ---------------------------------------------------------
+opcoes_modulos = [
+    "🏛️ Oferta & Concorrência (MinTur)",
+    "🛍️ Demanda E-Commerce (MELI)",
+    "🛠️ Arquitetura & Timeline de Engenharia",
+]
+
+# Inicializa estado caso não exista
+if "modulo_ativo" not in st.session_state:
+    query_params = st.query_params
+    aba_param = str(query_params.get("aba", "mintur")).lower()
+    if aba_param in ["ecommerce", "ml"]:
+        st.session_state.modulo_ativo = opcoes_modulos[1]
+    elif aba_param in ["timeline", "arquitetura", "engenharia"]:
+        st.session_state.modulo_ativo = opcoes_modulos[2]
+    else:
+        st.session_state.modulo_ativo = opcoes_modulos[0]
+
+
+def atualizar_por_hero():
+    st.session_state.modulo_ativo = st.session_state.radio_hero
+
+
+def atualizar_por_sidebar():
+    st.session_state.modulo_ativo = st.session_state.radio_sidebar
+
+
+# ---------------------------------------------------------
+# 4. NAVEGAÇÃO 1: BOTÕES DE SELEÇÃO ABAIXO DO HERO
+# ---------------------------------------------------------
+st.markdown("### 🎯 Selecione o Módulo de Inteligência")
+st.radio(
+    "Navegação Hero:",
+    options=opcoes_modulos,
+    index=opcoes_modulos.index(st.session_state.modulo_ativo),
+    key="radio_hero",
+    on_change=atualizar_por_hero,
+    label_visibility="collapsed",
+)
+
+st.markdown("---")
+
+
+# ---------------------------------------------------------
+# 5. NAVEGAÇÃO 2: MENU NA SIDEBAR & FILTROS
 # ---------------------------------------------------------
 st.sidebar.title("📌 Menu do Painel")
-
-# Suporte a parâmetro da URL (?aba=timeline ou ?aba=ecommerce)
-query_params = st.query_params
-aba_param = str(query_params.get("aba", "mintur")).lower()
-
-idx_menu_default = 0
-if aba_param in ["ecommerce", "ml"]:
-    idx_menu_default = 1
-elif aba_param in ["timeline", "cv", "arquitetura"]:
-    idx_menu_default = 2
-
-modulo_selecionado = st.sidebar.radio(
-    "Módulo de Navegação:",
-    options=[
-        "🏛️ Oferta & Concorrência (MinTur)",
-        "🛍️ Demanda E-Commerce (MELI)",
-        "🛠️ Arquitetura & Timeline (CV)",
-    ],
-    index=idx_menu_default,
+st.sidebar.radio(
+    "Módulo de Navegação Sidebar:",
+    options=opcoes_modulos,
+    index=opcoes_modulos.index(st.session_state.modulo_ativo),
+    key="radio_sidebar",
+    on_change=atualizar_por_sidebar,
 )
 
 st.sidebar.divider()
@@ -349,13 +410,13 @@ df_filtrado = df_raw[
 
 
 # ---------------------------------------------------------
-# 4. EXIBIÇÃO CONTEXTUAL DA ÁREA CENTRAL
+# 6. EXIBIÇÃO DO MÓDULO SELECIONADO
 # ---------------------------------------------------------
 
 # =========================================================
-# --- SEÇÃO 1: MINISTÉRIO DO TURISMO (OFERTA & DADOS) ---
+# --- MÓDULO 1: MINISTÉRIO DO TURISMO (OFERTA & DADOS) ---
 # =========================================================
-if modulo_selecionado == "🏛️ Oferta & Concorrência (MinTur)":
+if st.session_state.modulo_ativo == "🏛️ Oferta & Concorrência (MinTur)":
     # CARDS DE KPIS DO MINTUR
     col_k1, col_k2, col_k3, col_k4 = st.columns(4)
     with col_k1:
@@ -377,7 +438,6 @@ if modulo_selecionado == "🏛️ Oferta & Concorrência (MinTur)":
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # SUB-VISÕES DO MINTUR (TABS NO TOPO)
     tab_mapa, tab_dist, tab_hist, tab_perf, tab_dados = st.tabs([
         "🗺️ Mapa Interativo",
         "📍 Raio Sul de Minas",
@@ -604,9 +664,9 @@ if modulo_selecionado == "🏛️ Oferta & Concorrência (MinTur)":
 
 
 # =========================================================
-# --- SEÇÃO 2: E-COMMERCE MERCADO LIVRE (DEMANDA) ---
+# --- MÓDULO 2: E-COMMERCE MERCADO LIVRE (DEMANDA) ---
 # =========================================================
-elif modulo_selecionado == "🛍️ Demanda E-Commerce (MELI)":
+elif st.session_state.modulo_ativo == "🛍️ Demanda E-Commerce (MELI)":
     col_title1, col_title2 = st.columns([0.06, 0.94])
     with col_title1:
         st.image(
@@ -711,9 +771,9 @@ elif modulo_selecionado == "🛍️ Demanda E-Commerce (MELI)":
 
 
 # =========================================================
-# --- SEÇÃO 3: ARQUITETURA & TIMELINE (DOCUMENTAÇÃO/CV) ---
+# --- MÓDULO 3: ARQUITETURA & TIMELINE DE ENGENHARIA ---
 # =========================================================
-elif modulo_selecionado == "🛠️ Arquitetura & Timeline (CV)":
+elif st.session_state.modulo_ativo == "🛠️ Arquitetura & Timeline de Engenharia":
     st.subheader("🛠️ Engenharia de Dados, Arquitetura & Evolução do Projeto")
     st.write(
         "Detalhamento técnico da evolução do ecossistema analítico, desde a"
