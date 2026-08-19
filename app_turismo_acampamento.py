@@ -16,7 +16,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Estilização CSS Personalizada
+# Estilização CSS Personalizada (Hero Banner, Timeline & Sidebar Menu)
 st.markdown(
     """
     <style>
@@ -40,35 +40,6 @@ st.markdown(
         border: 1px solid rgba(255, 255, 255, 0.2);
     }
     
-    /* ESTILIZAÇÃO DO SELETOR DE MÓDULO (PROPOSTA 1) */
-    div[data-testid="stRadio"] > div {
-        display: flex;
-        flex-direction: row;
-        gap: 12px;
-        padding-bottom: 5px;
-    }
-    div[data-testid="stRadio"] label {
-        background-color: #F8FAFC;
-        border: 2px solid #E2E8F0;
-        border-radius: 12px;
-        padding: 12px 20px;
-        cursor: pointer;
-        font-weight: 700;
-        color: #334155;
-        transition: all 0.2s ease-in-out;
-    }
-    div[data-testid="stRadio"] label:hover {
-        background-color: #EFF6FF;
-        border-color: #93C5FD;
-        color: #1E3A8A;
-    }
-    div[data-testid="stRadio"] label[data-checked="true"] {
-        background-color: #1E3A8A !important;
-        color: white !important;
-        border-color: #1E3A8A !important;
-        box-shadow: 0 4px 12px rgba(30, 58, 138, 0.25);
-    }
-
     /* CSS DA TIMELINE DE ENGENHARIA DO PROJETO */
     .timeline-item {
         border-left: 4px solid #2563EB;
@@ -125,7 +96,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# --- HERO BANNER ---
+# --- HERO BANNER GLOBAL ---
 st.markdown(
     """
     <div class="hero-container">
@@ -308,28 +279,35 @@ except Exception as e:
 
 
 # ---------------------------------------------------------
-# 3. FILTROS LATERAIS E SELETOR DE EXPERIÊNCIA UX
+# 3. MENU INTEGRADO NA SIDEBAR (ESTILO SAAS / DASHBOARD)
 # ---------------------------------------------------------
-st.sidebar.title("Filtros de Pesquisa")
+st.sidebar.title("📌 Menu do Painel")
 
-# SELETOR DE UX (PROPOSTA 1 vs PROPOSTA 2)
-estilo_ux = st.sidebar.radio(
-    "🎨 Estilo de Navegação:",
+# Suporte a parâmetro da URL (?aba=timeline ou ?aba=ecommerce)
+query_params = st.query_params
+aba_param = str(query_params.get("aba", "mintur")).lower()
+
+idx_menu_default = 0
+if aba_param in ["ecommerce", "ml"]:
+    idx_menu_default = 1
+elif aba_param in ["timeline", "cv", "arquitetura"]:
+    idx_menu_default = 2
+
+modulo_selecionado = st.sidebar.radio(
+    "Módulo de Navegação:",
     options=[
-        "Proposta 1: Módulos & Tabs (Topo)",
-        "Proposta 2: Menu Lateral (SaaS)",
+        "🏛️ Oferta & Concorrência (MinTur)",
+        "🛍️ Demanda E-Commerce (MELI)",
+        "🛠️ Arquitetura & Timeline (CV)",
     ],
-    index=0,
-    help=(
-        "Alterne entre o layout modular no topo e o layout de menu na barra"
-        " lateral."
-    ),
+    index=idx_menu_default,
 )
 
 st.sidebar.divider()
+st.sidebar.subheader("⚙️ Filtros da Base")
 st.sidebar.caption(
-    "📌 *Nota de UX:* Os filtros abaixo aplicam-se à base de estabelecimentos"
-    " do Ministério do Turismo."
+    "📌 *Nota de UX:* Aplicáveis à base de estabelecimentos do Ministério do"
+    " Turismo."
 )
 
 ufs_disponiveis = sorted(df_raw["uf"].dropna().unique())
@@ -370,228 +348,265 @@ df_filtrado = df_raw[
 ]
 
 
+# ---------------------------------------------------------
+# 4. EXIBIÇÃO CONTEXTUAL DA ÁREA CENTRAL
+# ---------------------------------------------------------
+
 # =========================================================
-# 4. FUNÇÕES DE BLANDERIZADOR DE CONTEÚDO (MÓDULOS & TELAS)
+# --- SEÇÃO 1: MINISTÉRIO DO TURISMO (OFERTA & DADOS) ---
 # =========================================================
-
-
-def renderizar_mintur_mapa():
-    st.subheader("Mapeamento Geográfico da Concorrência")
-    st.markdown(
-        "Globo 🟠: Atendimento Multilíngue Diferenciado (2+ Idiomas) | Barraca"
-        " 🔵: Atendimento Padrão (1 Idioma)"
-    )
-
-    m = folium.Map(
-        location=[-22.4500, -45.9000], zoom_start=7, tiles="OpenStreetMap"
-    )
-
-    df_mapa = df_filtrado.dropna(subset=["latitude", "longitude"])
-    for idx, row in df_mapa.iterrows():
-        nome = row.get("nome_fantasia", "Sem Nome")
-        muni = row.get("municipio", "Não informado")
-        cap = row.get("capacidade", 0)
-        faixa = row.get("faixa_distancia", "N/A")
-        idiomas_str = row.get("idiomas", "Não informado")
-        is_multi = row.get("tem_multilingue_2plus")
-
-        popup_html = f"""
-            <div style="font-family: Arial; width: 230px;">
-                <h4 style="margin:0; color:#1E3A8A;">{nome}</h4>
-                <p style="margin:4px 0;"><b>Município:</b> {muni} ({row.get('uf')})</p>
-                <p style="margin:4px 0;"><b>Capacidade:</b> {cap} hóspedes</p>
-                <p style="margin:4px 0;"><b>Raio Focal:</b> {faixa}</p>
-                <p style="margin:4px 0;"><b>Idiomas:</b> {idiomas_str}</p>
-                <p style="margin:4px 0; color:{'#D97706' if is_multi else '#2563EB'}; font-weight:bold;">
-                    {'🌐 Multilíngue (2+ Idiomas)' if is_multi else '⛺ Atendimento Padrão'}
-                </p>
-            </div>
-        """
-
-        cor_pino = "orange" if is_multi else "blue"
-        icone_pino = "globe" if is_multi else "campground"
-
-        folium.Marker(
-            location=[row["latitude"], row["longitude"]],
-            popup=folium.Popup(popup_html, max_width=260),
-            tooltip=f"{'🌐 [2+ IDIOMAS] ' if is_multi else ''}{nome} ({muni})",
-            icon=folium.Icon(color=cor_pino, icon=icone_pino, prefix="fa"),
-        ).add_to(m)
-
-    st_folium(m, width=1100, height=500)
-
-
-def renderizar_mintur_distancia():
-    st.subheader("Análise de Adensamento por Faixa de Distância (Sul de Minas)")
-    ordem_faixas = [
-        "Até 20 km",
-        "21 a 100 km",
-        "101 a 200 km",
-        "201 a 300 km",
-        "301 a 400 km",
-        "401 a 500 km",
-        "Mais de 500 km",
-        "Não mapeado",
-    ]
-
-    df_faixas = (
-        df_filtrado.groupby("faixa_distancia")
-        .agg(
-            qtd_locais=("numero_de_inscricao_do_cnpj", "count"),
-            capacidade_total=("capacidade", "sum"),
-            locais_multilingues_2plus=("tem_multilingue_2plus", "sum"),
+if modulo_selecionado == "🏛️ Oferta & Concorrência (MinTur)":
+    # CARDS DE KPIS DO MINTUR
+    col_k1, col_k2, col_k3, col_k4 = st.columns(4)
+    with col_k1:
+        st.metric("Estabelecimentos Mapeados", len(df_filtrado))
+    with col_k2:
+        st.metric("Capacidade Total", f"{int(df_filtrado['capacidade'].sum()):,}")
+    with col_k3:
+        st.metric(
+            "Atendimento Multilíngue (2+ Idiomas)",
+            len(df_filtrado[df_filtrado["tem_multilingue_2plus"]]),
         )
-        .reindex(ordem_faixas)
-        .dropna(subset=["qtd_locais"])
-        .reset_index()
-    )
+    with col_k4:
+        media_c = (
+            round(df_filtrado["capacidade"].mean(), 1)
+            if len(df_filtrado) > 0
+            else 0
+        )
+        st.metric("Capacidade Média / Local", media_c)
 
-    col_d1, col_d2 = st.columns([1, 1])
-    with col_d1:
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # SUB-VISÕES DO MINTUR (TABS NO TOPO)
+    tab_mapa, tab_dist, tab_hist, tab_perf, tab_dados = st.tabs([
+        "🗺️ Mapa Interativo",
+        "📍 Raio Sul de Minas",
+        "📈 Série Histórica (24M)",
+        "📊 Perfil e Porte",
+        "📋 Base Concorrentes",
+    ])
+
+    with tab_mapa:
+        st.subheader("Mapeamento Geográfico da Concorrência")
+        st.markdown(
+            "Globo 🟠: Atendimento Multilíngue Diferenciado (2+ Idiomas) |"
+            " Barraca 🔵: Atendimento Padrão (1 Idioma)"
+        )
+
+        m = folium.Map(
+            location=[-22.4500, -45.9000], zoom_start=7, tiles="OpenStreetMap"
+        )
+
+        df_mapa = df_filtrado.dropna(subset=["latitude", "longitude"])
+        for idx, row in df_mapa.iterrows():
+            nome = row.get("nome_fantasia", "Sem Nome")
+            muni = row.get("municipio", "Não informado")
+            cap = row.get("capacidade", 0)
+            faixa = row.get("faixa_distancia", "N/A")
+            idiomas_str = row.get("idiomas", "Não informado")
+            is_multi = row.get("tem_multilingue_2plus")
+
+            popup_html = f"""
+                <div style="font-family: Arial; width: 230px;">
+                    <h4 style="margin:0; color:#1E3A8A;">{nome}</h4>
+                    <p style="margin:4px 0;"><b>Município:</b> {muni} ({row.get('uf')})</p>
+                    <p style="margin:4px 0;"><b>Capacidade:</b> {cap} hóspedes</p>
+                    <p style="margin:4px 0;"><b>Raio Focal:</b> {faixa}</p>
+                    <p style="margin:4px 0;"><b>Idiomas:</b> {idiomas_str}</p>
+                    <p style="margin:4px 0; color:{'#D97706' if is_multi else '#2563EB'}; font-weight:bold;">
+                        {'🌐 Multilíngue (2+ Idiomas)' if is_multi else '⛺ Atendimento Padrão'}
+                    </p>
+                </div>
+            """
+
+            cor_pino = "orange" if is_multi else "blue"
+            icone_pino = "globe" if is_multi else "campground"
+
+            folium.Marker(
+                location=[row["latitude"], row["longitude"]],
+                popup=folium.Popup(popup_html, max_width=260),
+                tooltip=(
+                    f"{'🌐 [2+ IDIOMAS] ' if is_multi else ''}{nome} ({muni})"
+                ),
+                icon=folium.Icon(color=cor_pino, icon=icone_pino, prefix="fa"),
+            ).add_to(m)
+
+        st_folium(m, width=1100, height=500)
+
+    with tab_dist:
+        st.subheader(
+            "Análise de Adensamento por Faixa de Distância (Sul de Minas)"
+        )
+        ordem_faixas = [
+            "Até 20 km",
+            "21 a 100 km",
+            "101 a 200 km",
+            "201 a 300 km",
+            "301 a 400 km",
+            "401 a 500 km",
+            "Mais de 500 km",
+            "Não mapeado",
+        ]
+
+        df_faixas = (
+            df_filtrado.groupby("faixa_distancia")
+            .agg(
+                qtd_locais=("numero_de_inscricao_do_cnpj", "count"),
+                capacidade_total=("capacidade", "sum"),
+                locais_multilingues_2plus=("tem_multilingue_2plus", "sum"),
+            )
+            .reindex(ordem_faixas)
+            .dropna(subset=["qtd_locais"])
+            .reset_index()
+        )
+
+        col_d1, col_d2 = st.columns([1, 1])
+        with col_d1:
+            st.dataframe(
+                df_faixas,
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "faixa_distancia": "Faixa de Distância",
+                    "qtd_locais": "Qtd Locais",
+                    "capacidade_total": "Capacidade (Leitos)",
+                    "locais_multilingues_2plus": "Locais (2+ Idiomas)",
+                },
+            )
+        with col_d2:
+            fig_faixa = px.bar(
+                df_faixas,
+                x="faixa_distancia",
+                y="capacidade_total",
+                color="locais_multilingues_2plus",
+                title="Capacidade em Leitos por Raio e Oferta Multilíngue",
+                color_continuous_scale="Blues",
+            )
+            st.plotly_chart(fig_faixa, use_container_width=True)
+
+    with tab_hist:
+        st.subheader("Evolução Histórica da Oferta (24 Meses)")
+        df_hist_full = df_raw[
+            (df_raw["uf"].isin(selected_ufs))
+            & (df_raw["capacidade"] >= min_cap)
+            & (df_raw["capacidade"] <= max_cap)
+        ]
+        hist_line = (
+            df_hist_full.groupby(["periodo_trimestre", "uf"])[
+                "numero_de_inscricao_do_cnpj"
+            ]
+            .count()
+            .reset_index()
+        )
+
+        fig_evol = px.line(
+            hist_line,
+            x="periodo_trimestre",
+            y="numero_de_inscricao_do_cnpj",
+            color="uf",
+            markers=True,
+            title="Evolução do Número de Estabelecimentos por Estado",
+            color_discrete_sequence=px.colors.qualitative.Set2,
+        )
+        st.plotly_chart(fig_evol, use_container_width=True)
+
+    with tab_perf:
+        st.subheader("Indicadores Complementares de Mercado")
+        col_i1, col_i2 = st.columns(2)
+        with col_i1:
+            fig_porte = px.pie(
+                df_filtrado,
+                names="porte",
+                title="Proporção por Porte Declarado",
+                hole=0.4,
+                color_discrete_sequence=px.colors.sequential.Darkmint,
+            )
+            st.plotly_chart(fig_porte, use_container_width=True)
+        with col_i2:
+            df_idiomas = df_filtrado["qtd_idiomas"].value_counts().reset_index()
+            df_idiomas.columns = ["qtd_idiomas", "total"]
+            fig_id = px.bar(
+                df_idiomas,
+                x="qtd_idiomas",
+                y="total",
+                title="Quantidade de Idiomas na Recepção",
+                color="total",
+                color_continuous_scale="Greens",
+            )
+            st.plotly_chart(fig_id, use_container_width=True)
+
+    with tab_dados:
+        st.subheader("Base Mapeada de Concorrentes")
+        st.write(
+            "A tabela está ordenada por padrão a partir da **Distância Real"
+            " (km)** (do mais próximo ao mais distante)."
+        )
+
+        df_tabela_ordenada = df_filtrado.sort_values(
+            by="distancia_km", ascending=True
+        ).copy()
+        df_tabela_ordenada["qtd_concorrente_num"] = range(
+            1, len(df_tabela_ordenada) + 1
+        )
+
+        cols_exibir = [
+            col
+            for col in [
+                "qtd_concorrente_num",
+                "distancia_km",
+                "faixa_distancia",
+                "uf",
+                "municipio",
+                "nome_fantasia",
+                "porte",
+                "capacidade",
+                "idiomas",
+                "qtd_idiomas",
+                "telefone_comercial",
+                "e_mail_comercial",
+            ]
+            if col in df_tabela_ordenada.columns
+        ]
+
         st.dataframe(
-            df_faixas,
+            df_tabela_ordenada[cols_exibir],
             use_container_width=True,
             hide_index=True,
             column_config={
-                "faixa_distancia": "Faixa de Distância",
-                "qtd_locais": "Qtd Locais",
-                "capacidade_total": "Capacidade (Leitos)",
-                "locais_multilingues_2plus": "Locais (2+ Idiomas)",
+                "qtd_concorrente_num": st.column_config.NumberColumn(
+                    "Nº / Qtd Concorrente",
+                    help=(
+                        "Posição sequencial do concorrente por ordem de"
+                        " proximidade"
+                    ),
+                    format="#%d",
+                ),
+                "distancia_km": st.column_config.NumberColumn(
+                    "Distância Real (km)",
+                    help=(
+                        "Distância em quilômetros exatos até o polo focal no"
+                        " Sul de Minas"
+                    ),
+                    format="%d km",
+                ),
+                "faixa_distancia": "Faixa de Raio",
+                "qtd_idiomas": st.column_config.NumberColumn(
+                    "Total Idiomas",
+                    help="Soma dos idiomas atendidos pelo estabelecimento",
+                    format="%d",
+                ),
+                "idiomas": "Lista de Idiomas",
+                "capacidade": st.column_config.NumberColumn(
+                    "Capacidade (Leitos)", format="%d"
+                ),
             },
         )
-    with col_d2:
-        fig_faixa = px.bar(
-            df_faixas,
-            x="faixa_distancia",
-            y="capacidade_total",
-            color="locais_multilingues_2plus",
-            title="Capacidade em Leitos por Raio e Oferta Multilíngue",
-            color_continuous_scale="Blues",
-        )
-        st.plotly_chart(fig_faixa, use_container_width=True)
 
 
-def renderizar_mintur_historico():
-    st.subheader("Evolução Histórica da Oferta (24 Meses)")
-    df_hist_full = df_raw[
-        (df_raw["uf"].isin(selected_ufs))
-        & (df_raw["capacidade"] >= min_cap)
-        & (df_raw["capacidade"] <= max_cap)
-    ]
-    hist_line = (
-        df_hist_full.groupby(["periodo_trimestre", "uf"])[
-            "numero_de_inscricao_do_cnpj"
-        ]
-        .count()
-        .reset_index()
-    )
-
-    fig_evol = px.line(
-        hist_line,
-        x="periodo_trimestre",
-        y="numero_de_inscricao_do_cnpj",
-        color="uf",
-        markers=True,
-        title="Evolução do Número de Estabelecimentos por Estado",
-        color_discrete_sequence=px.colors.qualitative.Set2,
-    )
-    st.plotly_chart(fig_evol, use_container_width=True)
-
-
-def renderizar_mintur_perfil():
-    st.subheader("Indicadores Complementares de Mercado")
-    col_i1, col_i2 = st.columns(2)
-    with col_i1:
-        fig_porte = px.pie(
-            df_filtrado,
-            names="porte",
-            title="Proporção por Porte Declarado",
-            hole=0.4,
-            color_discrete_sequence=px.colors.sequential.Darkmint,
-        )
-        st.plotly_chart(fig_porte, use_container_width=True)
-    with col_i2:
-        df_idiomas = df_filtrado["qtd_idiomas"].value_counts().reset_index()
-        df_idiomas.columns = ["qtd_idiomas", "total"]
-        fig_id = px.bar(
-            df_idiomas,
-            x="qtd_idiomas",
-            y="total",
-            title="Quantidade de Idiomas na Recepção",
-            color="total",
-            color_continuous_scale="Greens",
-        )
-        st.plotly_chart(fig_id, use_container_width=True)
-
-
-def renderizar_mintur_concorrentes():
-    st.subheader("Base Mapeada de Concorrentes")
-    st.write(
-        "A tabela está ordenada por padrão a partir da **Distância Real (km)**"
-        " (do mais próximo ao mais distante)."
-    )
-
-    df_tabela_ordenada = df_filtrado.sort_values(
-        by="distancia_km", ascending=True
-    ).copy()
-    df_tabela_ordenada["qtd_concorrente_num"] = range(
-        1, len(df_tabela_ordenada) + 1
-    )
-
-    cols_exibir = [
-        col
-        for col in [
-            "qtd_concorrente_num",
-            "distancia_km",
-            "faixa_distancia",
-            "uf",
-            "municipio",
-            "nome_fantasia",
-            "porte",
-            "capacidade",
-            "idiomas",
-            "qtd_idiomas",
-            "telefone_comercial",
-            "e_mail_comercial",
-        ]
-        if col in df_tabela_ordenada.columns
-    ]
-
-    st.dataframe(
-        df_tabela_ordenada[cols_exibir],
-        use_container_width=True,
-        hide_index=True,
-        column_config={
-            "qtd_concorrente_num": st.column_config.NumberColumn(
-                "Nº / Qtd Concorrente",
-                help=(
-                    "Posição sequencial do concorrente por ordem de proximidade"
-                ),
-                format="#%d",
-            ),
-            "distancia_km": st.column_config.NumberColumn(
-                "Distância Real (km)",
-                help=(
-                    "Distância em quilômetros exatos até o polo focal no Sul de"
-                    " Minas"
-                ),
-                format="%d km",
-            ),
-            "faixa_distancia": "Faixa de Raio",
-            "qtd_idiomas": st.column_config.NumberColumn(
-                "Total Idiomas",
-                help="Soma dos idiomas atendidos pelo estabelecimento",
-                format="%d",
-            ),
-            "idiomas": "Lista de Idiomas",
-            "capacidade": st.column_config.NumberColumn(
-                "Capacidade (Leitos)", format="%d"
-            ),
-        },
-    )
-
-
-def renderizar_mercadolivre():
+# =========================================================
+# --- SEÇÃO 2: E-COMMERCE MERCADO LIVRE (DEMANDA) ---
+# =========================================================
+elif modulo_selecionado == "🛍️ Demanda E-Commerce (MELI)":
     col_title1, col_title2 = st.columns([0.06, 0.94])
     with col_title1:
         st.image(
@@ -695,7 +710,10 @@ def renderizar_mercadolivre():
     )
 
 
-def renderizar_timeline():
+# =========================================================
+# --- SEÇÃO 3: ARQUITETURA & TIMELINE (DOCUMENTAÇÃO/CV) ---
+# =========================================================
+elif modulo_selecionado == "🛠️ Arquitetura & Timeline (CV)":
     st.subheader("🛠️ Engenharia de Dados, Arquitetura & Evolução do Projeto")
     st.write(
         "Detalhamento técnico da evolução do ecossistema analítico, desde a"
@@ -838,170 +856,3 @@ def renderizar_timeline():
     """,
         unsafe_allow_html=True,
     )
-
-
-# =========================================================
-# 5. EXECUÇÃO DO LAYOUT CONFORME O ESTILO SELECIONADO
-# =========================================================
-
-# PARÂMETRO DE URL QUE FUNCIONA EM AMBOS OS ESTILOS (?aba=timeline)
-query_params = st.query_params
-aba_param = str(query_params.get("aba", "")).lower()
-
-# ---------------------------------------------------------
-# EXECUÇÃO: PROPOSTA 1 (MÓDULOS & TABS NO TOPO)
-# ---------------------------------------------------------
-if estilo_ux == "Proposta 1: Módulos & Tabs (Topo)":
-    st.markdown("### 🎯 Selecione o Módulo de Inteligência")
-
-    idx_modulo_default = 0
-    if aba_param in ["ecommerce", "ml"]:
-        idx_modulo_default = 1
-    elif aba_param in ["timeline", "cv", "arquitetura"]:
-        idx_modulo_default = 2
-
-    modulo_selecionado = st.radio(
-        "Módulo Principal:",
-        options=[
-            "🏛️ Oferta & Concorrência (MinTur)",
-            "🛍️ Demanda & E-commerce (Mercado Livre)",
-            "🛠️ Arquitetura & Timeline (Engenharia / CV)",
-        ],
-        index=idx_modulo_default,
-        label_visibility="collapsed",
-    )
-
-    st.markdown("---")
-
-    if modulo_selecionado == "🏛️ Oferta & Concorrência (MinTur)":
-        # CARDS DE KPIS DO MINTUR
-        col_k1, col_k2, col_k3, col_k4 = st.columns(4)
-        with col_k1:
-            st.metric("Estabelecimentos Mapeados", len(df_filtrado))
-        with col_k2:
-            st.metric(
-                "Capacidade Total", f"{int(df_filtrado['capacidade'].sum()):,}"
-            )
-        with col_k3:
-            st.metric(
-                "Atendimento Multilíngue (2+ Idiomas)",
-                len(df_filtrado[df_filtrado["tem_multilingue_2plus"]]),
-            )
-        with col_k4:
-            media_c = (
-                round(df_filtrado["capacidade"].mean(), 1)
-                if len(df_filtrado) > 0
-                else 0
-            )
-            st.metric("Capacidade Média / Local", media_c)
-
-        st.markdown("<br>", unsafe_allow_html=True)
-
-        sub_tab1, sub_tab2, sub_tab3, sub_tab4, sub_tab5 = st.tabs([
-            "🗺️ Mapa Interativo",
-            "📍 Raio Sul de Minas",
-            "📈 Série Histórica (24M)",
-            "📊 Perfil e Porte",
-            "📋 Base Concorrentes",
-        ])
-
-        with sub_tab1:
-            renderizar_mintur_mapa()
-        with sub_tab2:
-            renderizar_mintur_distancia()
-        with sub_tab3:
-            renderizar_mintur_historico()
-        with sub_tab4:
-            renderizar_mintur_perfil()
-        with sub_tab5:
-            renderizar_mintur_concorrentes()
-
-    elif modulo_selecionado == "🛍️ Demanda & E-commerce (Mercado Livre)":
-        renderizar_mercadolivre()
-
-    elif (
-        modulo_selecionado == "🛠️ Arquitetura & Timeline (Engenharia / CV)"
-    ):
-        renderizar_timeline()
-
-
-# ---------------------------------------------------------
-# EXECUÇÃO: PROPOSTA 2 (MENU COMPLETO NA SIDEBAR - SAAS STYLE)
-# ---------------------------------------------------------
-else:
-    st.sidebar.divider()
-    st.sidebar.subheader("📌 Navegação do Painel")
-
-    # Mapeamento de parâmetro para a sidebar
-    opcao_sidebar_default = "🗺️ Mapa Interativo (MinTur)"
-    if aba_param == "timeline":
-        opcao_sidebar_default = "🛠️ Arquitetura & Timeline (CV)"
-    elif aba_param == "ecommerce":
-        opcao_sidebar_default = "🛍️ Benchmark Mercado Livre"
-
-    menu_opcao = st.sidebar.radio(
-        "Ir para a Seção:",
-        options=[
-            "🗺️ Mapa Interativo (MinTur)",
-            "📍 Raio Sul de Minas",
-            "📈 Série Histórica (24M)",
-            "📊 Perfil e Porte",
-            "📋 Base Concorrentes",
-            "🛍️ Benchmark Mercado Livre",
-            "🛠️ Arquitetura & Timeline (CV)",
-        ],
-        index=0 if aba_param == "" else [
-            "🗺️ Mapa Interativo (MinTur)",
-            "📍 Raio Sul de Minas",
-            "📈 Série Histórica (24M)",
-            "📊 Perfil e Porte",
-            "📋 Base Concorrentes",
-            "🛍️ Benchmark Mercado Livre",
-            "🛠️ Arquitetura & Timeline (CV)",
-        ].index(opcao_sidebar_default),
-    )
-
-    # Exibe KPIs no topo quando estiver em telas do MinTur
-    if "MinTur" in menu_opcao or menu_opcao in [
-        "📍 Raio Sul de Minas",
-        "📈 Série Histórica (24M)",
-        "📊 Perfil e Porte",
-        "📋 Base Concorrentes",
-    ]:
-        col_k1, col_k2, col_k3, col_k4 = st.columns(4)
-        with col_k1:
-            st.metric("Estabelecimentos Mapeados", len(df_filtrado))
-        with col_k2:
-            st.metric(
-                "Capacidade Total", f"{int(df_filtrado['capacidade'].sum()):,}"
-            )
-        with col_k3:
-            st.metric(
-                "Atendimento Multilíngue (2+ Idiomas)",
-                len(df_filtrado[df_filtrado["tem_multilingue_2plus"]]),
-            )
-        with col_k4:
-            media_c = (
-                round(df_filtrado["capacidade"].mean(), 1)
-                if len(df_filtrado) > 0
-                else 0
-            )
-            st.metric("Capacidade Média / Local", media_c)
-
-        st.markdown("---")
-
-    # Renderização da tela selecionada
-    if menu_opcao == "🗺️ Mapa Interativo (MinTur)":
-        renderizar_mintur_mapa()
-    elif menu_opcao == "📍 Raio Sul de Minas":
-        renderizar_mintur_distancia()
-    elif menu_opcao == "📈 Série Histórica (24M)":
-        renderizar_mintur_historico()
-    elif menu_opcao == "📊 Perfil e Porte":
-        renderizar_mintur_perfil()
-    elif menu_opcao == "📋 Base Concorrentes":
-        renderizar_mintur_concorrentes()
-    elif menu_opcao == "🛍️ Benchmark Mercado Livre":
-        renderizar_mercadolivre()
-    elif menu_opcao == "🛠️ Arquitetura & Timeline (CV)":
-        renderizar_timeline()
